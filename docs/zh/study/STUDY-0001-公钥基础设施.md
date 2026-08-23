@@ -1,10 +1,10 @@
 # STUDY-0001 公钥基础设施 
  **作者 :**  **[羽兮](https://github.com/yuxi39 "羽兮的个人空间")**  
  **作品：** **[公钥基础设施](https://github.com/yuxi39/qchat/blob/main/docs/zh/study/STUDY-0001-公钥基础设施.md)**  
- **类型 :**  **Document**
- **链接 :**  *<https://github.com/yuxi39/qchat/blob/main/docs/zh/study/STUDY-0001-%E5%85%AC%E9%92%A5%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD.md>*  
+ **类型 :**  **Document**  
+ **链接 :**  *<https://github.com/yuxi39/qchat/blob/main/docs/zh/study/STUDY-0001-公钥基础设施.md>*  
  **许可 :**  **[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/ "LICENSE Permission")**  
- **状态 :**  **学习中**
+ **状态 :**  **学习中**  
  **创建 :**  *2026-08-23*  
  **版本 :**  **version 1.0**  
  **修改 :**  **初始版本**  
