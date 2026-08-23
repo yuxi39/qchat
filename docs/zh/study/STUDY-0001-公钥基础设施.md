@@ -25,7 +25,8 @@ license: CC BY-SA 4.0
 **[2 PKI 公钥基础设施](#2-pki-公钥基础设施)**  
 &nbsp;&nbsp;**[2.1 密码学基础](#21-密码学基础)**  
 &nbsp;&nbsp;&nbsp;&nbsp;**[2.1.1 对称加密算法](#211-对称加密算法)**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**[2.1.1.1 分组密码算法](#2111-分组密码算法)**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**[2.1.1.1 分组密码算法](#2111-分组密码算法)**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**[2.1.1.1.1 DES加密算法](#21111-des加密算法)**  
 <!-- /TOC -->
 
 ## 1 动机
@@ -229,7 +230,7 @@ $$
 \mathsf{E}(K, M) = C
 $$
 
-> $K$ 是长度为 $k$ 的密钥，$M$ 是长度为 $n$ 的明文块，$C$ 是长度为 $n$ 的密文块  
+> $K$ 是长度为 $k$ 的密钥， $M$ 是长度为 $n$ 的明文块， $C$ 是长度为 $n$ 的密文块  
 
 例如 [AES(Advanced Encryption Standard)][20]：
 
@@ -240,10 +241,96 @@ $$
 > block size 固定 128 bit, key 可以是 128、192 或 256 bit  
 
 [分组密码][9] 思想在理论上解决了如何构造安全密码的问题，但真正推动现代密码学进入工程应用阶段的是将这些理论思想转化为标准化的算法实现的过程。[DES(Data Encryption Standard)][21] 是 [分组密码][9] 算法中最具有代表性的算法之一。  
-[DES][21] 于 1977 年被美国国家标准局采纳为联邦信息处理标准，是第一个广泛应用的现代分组密码标准。  
+##### 2.1.1.1.1 DES加密算法
+分组密码理论提出之后，真正推动其进入工程实践的是一系列标准化密码算法的出现。其中最具代表性的便是 [DES（Data Encryption Standard，数据加密标准）][9]。  
+[DES][9] 由 IBM 在 20 世纪 70 年代设计，并于 1977 年被美国国家标准局（NBS，现 NIST）采纳为联邦信息处理标准（FIPS 46），成为历史上第一个被广泛应用的现代分组密码标准。  
+[DES][9] 是一种基于 **[Feistel Network（费斯妥网络）][22]** 的分组密码算法，它将 [克劳德·香农][15] 提出的混淆（Confusion）与扩散（Diffusion）思想进行了工程化实现。
 
+DES 的基本参数如下：
 
+- 分组长度（Block Size）：64 bit
+- 密钥长度（Key Length）：64 bit，其中有效密钥长度为 56 bit，剩余 8 bit 用于奇偶校验
+- 加密轮数（Rounds）：16 轮
 
+DES 首先将输入的 64 bit 明文划分为左右两个部分：
+
+$$
+L_0,R_0
+$$
+
+在每一轮加密过程中，通过轮函数 $F$ 和当前轮密钥 $K_i$ 对数据进行混合：
+
+$$
+L_i=R_{i-1}
+$$
+
+$$
+R_i=L_{i-1}\oplus F(R_{i-1},K_i)
+$$
+
+其中：
+
+- $F$ 是轮函数，负责实现非线性的替换和扩散；
+- $K_i$ 是由原始密钥派生出的第 $i$ 轮子密钥；
+- $\oplus$ 表示异或操作。
+
+通过多轮迭代，简单的替换、置换操作不断叠加，使最终密文与明文之间形成复杂的关系，从而实现 Shannon 所提出的混淆和扩散目标。
+
+Feistel 结构的一个重要特点是：
+
+> 加密和解密过程使用相同的结构，只需要将子密钥顺序反转即可完成解密。
+
+这使得密码算法实现更加简单可靠。
+
+然而，随着计算能力的发展，DES 的安全性已经无法满足现代密码系统需求。
+
+其主要问题包括：
+
+- 有效密钥长度仅为 56 bit，密钥空间为：
+
+$$
+2^{56}
+$$
+
+  已经可以通过暴力搜索方式破解；
+
+- 分组长度为 64 bit，相比现代算法较小，不适合大规模数据加密场景；
+
+- DES 本身只提供机密性（Confidentiality），不提供消息完整性（Integrity）和认证能力。
+
+因此，[DES][9] 已经不再用于新的安全系统中，但它在密码学发展史中具有重要意义：
+
+- 它证明了分组密码理论可以应用于实际工程；
+- 它推动了 [Feistel Network][22] 等密码结构的发展；
+- 它为后续 [AES][20] 等现代分组密码算法的设计提供了重要经验。
+
+在理解 [DES][9] 的设计思想之后，接下来通过 Go 标准库中的 [crypto/des](https://pkg.go.dev/crypto/des "gopkg des") 包实现一个简单的分组加密示例。
+
+```go
+import "crypto/des"
+
+func Enc(key, plaintext []byte) []byte {
+	block, err := des.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+	ciphertext := make([]byte, block.BlockSize())
+	block.Encrypt(ciphertext, plaintext)
+
+	return ciphertext
+}
+
+func Dec(key, ciphertext []byte) []byte {
+	block, err := des.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+	plaintext := make([]byte, block.BlockSize())
+	block.Decrypt(plaintext, ciphertext)
+
+	return plaintext
+}
+```
 
 
 [1]:https://en.wikipedia.org/wiki/QUIC "QUIC 维基百科"
@@ -267,6 +354,7 @@ $$
 [19]:https://en.wikipedia.org/wiki/Transposition_cipher "置换 维基百科"
 [20]:https://en.wikipedia.org/wiki/Advanced_Encryption_Standard "AES 维基百科"  
 [21]:https://en.wikipedia.org/wiki/Data_Encryption_Standard "DES 维基百科"
+[22]:https://en.wikipedia.org/wiki/Feistel_cipher "Feistel Cipher 维基百科"
 ## 引用  
 
 
