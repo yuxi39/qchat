@@ -1,6 +1,6 @@
 # STUDY-0001 公钥基础设施 
  **作者 :**  **[羽兮](https://github.com/yuxi39 "羽兮的个人空间")**  
- **作品：** **[公钥基础设施](https://github.com/yuxi39/qchat/blob/main/docs/zh/study/STUDY-0001-公钥基础设施.md)**  
+ **作品：**  **[公钥基础设施](https://github.com/yuxi39/qchat/blob/main/docs/zh/study/STUDY-0001-公钥基础设施.md)**  
  **类型 :**  **Document**  
  **链接 :**  *<https://github.com/yuxi39/qchat/blob/main/docs/zh/study/STUDY-0001-公钥基础设施.md>*  
  **许可 :**  **[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/ "LICENSE Permission")**  
@@ -25,7 +25,7 @@ license: CC BY-SA 4.0
 **[2 PKI 公钥基础设施](#2-pki-公钥基础设施)**  
 &nbsp;&nbsp;**[2.1 密码学基础](#21-密码学基础)**  
 &nbsp;&nbsp;&nbsp;&nbsp;**[2.1.1 对称加密算法](#211-对称加密算法)**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**[2.1.1.1 块密码算法](#2111-块密码算法)**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**[2.1.1.1 分组密码算法](#2111-分组密码算法)**
 <!-- /TOC -->
 
 ## 1 动机
@@ -176,24 +176,73 @@ $$
 对称加密算法的加密过程可描述为：加密算法 $Enc$ 使用密钥 $k$ 对明文消息 $m$ 进行加密运算得到密文 $c$  
 
 $$
-c=Enc_k(m)
+c=\mathsf{Enc}_k(m)
 $$
 
 对称加密算法的解密过程可描述为：解密算法 $Dec$ 使用密钥 $k$ 对密文消息 $c$ 进行解密运算得到明文 $m$  
 
 $$
-m=Dec_k(c)
+m=\mathsf{Dec}_k(c)
 $$
 
 一个正确的对称加密方案应满足使用密钥 $k$ 对明文消息 $m$ 经过加密和解密操作之后，结果仍为明文消息 $m$：
 
 $$
-Dec_k(Enc_k(m))=m
+\mathsf{Dec}_k(\mathsf{Enc}_k(m))=m
 $$
 
-对称加密算法的实现分为两种实现方式：[块密码(Block Cipher)][9] 和 [流密码(Stream Cipher)][10]，实际系统中通常还需要 [工作模式(Mode of Operation)][11] 或者 [认证机制(AEAD)][12] 以满足安全场景的需要。  
+对称加密算法的实现分为两种实现方式：[分组密码(Block Cipher)][9] 和 [流密码(Stream Cipher)][10]，实际系统中通常还需要 [工作模式(Mode of Operation)][11] 或者 [认证机制(AEAD)][12] 以满足安全场景的需要。  
 
-#### 2.1.1.1 块密码算法
+#### 2.1.1.1 分组密码算法
+密码学问题在于如何让信息只能被可靠的通信方获取。无论是小时候的简易密码本、[凯撒密码][13]、还是一些其他的古典保密通信方法，在应用上长期存在安全性依赖于加密、解密的方法不被人知晓，更像是一种智力游戏，在图灵的纪录片中，报纸上的密文悬赏破译就是这种加密方式。由于密码往往和军事行动、政治敏感信息以及商业秘密相关，以往的古典密码不仅对于明文进行混淆保护，连同加密和解密的方法也一并纳入机密中。  
+在 19 世纪，Auguste Kerckhoffs 提出了 [Kerckhoffs原则][14] 描述了加密系统应该在除密钥外的一切系统细节都暴露给敌手的情况下仍然应该是安全的，奠定了现代密码设计中公开算法、依赖密钥安全这一核心原则。  
+> 受 [Kerckhoffs原则][14] 的启发，我认为一个软件的设计也应该尽最大努力去遵循这一点：将复杂的系统收敛到简洁的语义实现问题上  
+
+[Kerckhoffs原则][14] 打破了隐藏系统细节才能保证安全的传统密码观念，将密码系统的安全性核心归结于密钥的保密性，而不是算法本身的隐藏。该原则定义了什么是正确的加密系统，但并没有回答：一个公开的密码算法是如何保证通信安全的？  
+围绕着这个问题的探讨推动了现代密码学理论的发展，其中现代密码学最重要的奠基人之一的美国数学家 [克劳德·香农(Claude Shannon)][15] 在 1949 年发表了论文 [《Communication Theory of Secrecy Systems》][16] 首次从数学角度系统分析了密码系统，将密码系统从博弈者的智力游戏带到了可形式化分析和研究的信息科学殿堂。
+[克劳德·香农][15] 认为，一个安全的密码系统应该满足两个核心目标：  
+
+**混淆(Confusion)**
+- 使密钥与密文之间的统计关系变得复杂，使攻击者难以通过分析密文推导密钥 
+- 通常通过非线性的替换操作实现  
+
+**扩散(Diffusion)**
+- 将明文中的统计学特征扩散到整个密文，使局部信息难以泄露
+- 通常通过置换、线性变换等方式实现
+
+[克劳德·香农][15] 分析了 [乘积密码(Product Cipher)][17] 并提出以 [乘积密码][17] 构建有效提升安全性的加密方法。[乘积密码][17] 通过结合简单运算来实现，比如结合 [替换(substitutions)][18] 和 [置换(permutations)][19] 实现。  
+> [迭代乘积密码(Iterated product cipher)][17] 分多轮进行加密，每一轮都基于原始密钥派生出不同的子密钥。
+
+基于 [克劳德·香农][15] 提出的乘积密码思想，现代密码学发展出了 [分组密码(Block Cipher)][9] 这一重要的密码学原语。  
+[分组密码][9] 将明文划分为固定长度的数据块，通过控制密钥的可逆变换将每个明文块转换为对应的密文块。  
+
+$$
+\mathsf{E}:\{0,1\}^{k}\times\{0, 1\}^n \rightarrow \{0, 1\}^n
+$$
+
+> 基于密钥 $K$ , 加密函数 $\mathsf{E}_K$ 将长度为 $n$ bit 的明文块映射到长度为 $n$ bit 的密文块  
+> $\{0, 1\}^k$ : 密钥空间 (key space)  
+> $\{0, 1\}^n$ : 明文块空间 (plaintext block space)  
+> $\{0, 1\}^n$ : 密文块空间 (ciphertext block space)  
+
+$$
+\mathsf{E}(K, M) = C
+$$
+
+> $K$ 是长度为 $k$ 的密钥，$M$ 是长度为 $n$ 的明文块，$C$ 是长度为 $n$ 的密文块  
+
+例如 [AES(Advanced Encryption Standard)][20]：
+
+$$
+\mathsf{E}:\{0, 1\}^{k}\times\{0, 1\}^{128} \rightarrow \{0, 1\}^{128}, k\in\{128, 192, 256\}
+$$
+
+> block size 固定 128 bit, key 可以是 128、192 或 256 bit  
+
+[分组密码][9] 思想在理论上解决了如何构造安全密码的问题，但真正推动现代密码学进入工程应用阶段的是将这些理论思想转化为标准化的算法实现的过程。[DES(Data Encryption Standard)][21] 是 [分组密码][9] 算法中最具有代表性的算法之一。  
+[DES][21] 于 1977 年被美国国家标准局采纳为联邦信息处理标准，是第一个广泛应用的现代分组密码标准。  
+
+
 
 
 
@@ -209,6 +258,15 @@ $$
 [10]:https://en.wikipedia.org/wiki/Stream_cipher "Stream_cipher 维基百科"
 [11]:https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation "Mode_of_Operation 维基百科"
 [12]:https://en.wikipedia.org/wiki/Authenticated_encryption "AEAD 维基百科"
+[13]:https://en.wikipedia.org/wiki/Caesar_cipher "Caesar_cipher 维基百科"
+[14]:https://en.wikipedia.org/wiki/Kerckhoffs%27s_principle "Kerckhoffs原则 维基百科"
+[15]:https://en.wikipedia.org/wiki/Claude_Shannon "Claude_Shannon 维基百科"
+[16]:https://en.wikipedia.org/wiki/Communication_Theory_of_Secrecy_Systems "安全系统的通信理论 维基百科"
+[17]:https://en.wikipedia.org/wiki/Product_cipher "乘积密码 维基百科"
+[18]:https://en.wikipedia.org/wiki/Substitution_cipher "替换 维基百科"
+[19]:https://en.wikipedia.org/wiki/Transposition_cipher "置换 维基百科"
+[20]:https://en.wikipedia.org/wiki/Advanced_Encryption_Standard "AES 维基百科"  
+[21]:https://en.wikipedia.org/wiki/Data_Encryption_Standard "DES 维基百科"
 ## 引用  
 
 
